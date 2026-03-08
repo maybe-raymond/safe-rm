@@ -2,9 +2,7 @@
 
 A Rust-based safety utility for Linux that prevents accidental data loss by moving deleted files to the Trash instead of permanently unlinking them.
 
-## The Backstory
-
-We've all been there: a mistyped `rm` command deletes hours of work in a heartbeat. After losing code to the standard Linux `rm` command and finding no way to recover it, I saw an opportunity to build a "safe" alternative.
+Over the weekend I deleted some code by accident with the `rm` command. Spent quite a few hours trying to recover it and ended up re-typing all that code. So I decided to make a safe version in Rust. This project was only written in Rust because I just happened to be learning the language at the time.
 
 **Safe-rm** acts as a buffer, ensuring that your "deleted" files are simply moved to the system Trash folder.
 
@@ -50,6 +48,6 @@ safe-rm node_modules/
 
 ## Development
 
-- [] Add wildcard for files to do something like the following `safe-rm *.txt *.json`
-- [] Add a better help message
-- [] Verbose output commandline arg
+- Add wildcard for files to do something like the following `safe-rm *.txt *.json`
+- Add a better help message
+- Verbose output commandline arg
