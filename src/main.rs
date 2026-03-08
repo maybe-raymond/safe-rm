@@ -12,7 +12,7 @@ fn move_to_trash(trash_path: &PathBuf, file: PathBuf) {
 
             match fs::rename(&file, new_path) {
                 Ok(_) => println!("Removed file {file_name:?}"),
-                Err(e) => println!("Faild to move to Trash with {e}"),
+                Err(e) => eprintln!("Faild to move to Trash with {e}"),
             }
         }
         None => println!("File name for file {file:?} not found"),
@@ -34,7 +34,7 @@ fn delete_files_in_path(folder_contents: fs::ReadDir, trash_path: &PathBuf) {
                     delete_files_in_path(contents, trash_path);
                 }
             }
-            Err(e) => println!("Error {e:?} occured while trying to delete file"),
+            Err(e) => eprintln!("Error {e:?} occured while trying to delete file"),
         }
     }
 }
@@ -87,11 +87,10 @@ fn main() {
                 if file.is_absolute() {
                     move_to_trash(&trash_location, file)
                 } else if file.is_file() {
-                    //println!("Moving file: {file_path} to trash folder");
                     let full_path = cwd_directory.join(file);
                     move_to_trash(&trash_location, full_path)
                 } else {
-                    println!("{file_path} might be a directory or might not exist");
+                    eprintln!("{file_path} might be a directory or might not exist");
                 }
             }
         }
