@@ -46,8 +46,15 @@ Works with directories
 safe-rm node_modules/
 ```
 
+Globs also work with the command
+
+```bash
+safe-rm *json
+```
+
 ## Development
 
-- Add wildcard for files to do something like the following `safe-rm *.txt *.json`
 - Add a better help message
 - Verbose output commandline arg
+- Need to add verbose mode
+- Need to delete folder after removing files

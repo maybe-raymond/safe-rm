@@ -1,14 +1,13 @@
 use std::env;
 use std::fs;
+use std::io::ErrorKind;
 use std::path::PathBuf;
-
-// need to implement for fuzzy search
 
 fn move_to_trash(trash_path: &PathBuf, file: PathBuf) {
     match file.file_name() {
         Some(file_name) => {
             let new_path = trash_path.join(file_name);
-            //println!("Current Path: {:?} Trash path {:?}", current_path, new_path);
+            //println!("Current Path: {:?} Trash path {:?}", file, new_path);
 
             match fs::rename(&file, new_path) {
                 Ok(_) => println!("Removed file {file_name:?}"),
@@ -27,11 +26,12 @@ fn delete_files_in_path(folder_contents: fs::ReadDir, trash_path: &PathBuf) {
                 if file_path.is_file() {
                     move_to_trash(trash_path, file_path);
                 } else {
-                    println!("{:?} is a sub direcotry", file_path);
                     let contents = file_path
                         .read_dir()
                         .expect("Could not read the contents of folder");
                     delete_files_in_path(contents, trash_path);
+                    fs::remove_dir(file_path)
+                        .expect("Failed to delete folder. Please check your permissions");
                 }
             }
             Err(e) => eprintln!("Error {e:?} occured while trying to delete file"),
@@ -73,7 +73,33 @@ fn main() {
             let folder_contents = folder_dir
                 .read_dir()
                 .expect("Could not read the contents of folder");
-            delete_files_in_path(folder_contents, &trash_location);
+
+            // creating a folder in trash path to push all the new items
+            let folder_name = folder_dir
+                .file_name()
+                .expect("seletect DIR does not have a name");
+            let trash_location = trash_location.join(folder_name);
+
+            match fs::create_dir(&trash_location) {
+                Ok(_) => {
+                    //println!("Folder {:?} was created", trash_location);
+                    delete_files_in_path(folder_contents, &trash_location);
+                    // deleting folder
+                    fs::remove_dir(folder_dir)
+                        .expect("Failed to delete folder. Please check your permissions");
+                }
+                Err(e) => match e.kind() {
+                    ErrorKind::AlreadyExists => {
+                        // keep going and delete the file
+                        //println!("Folder already exiosts");
+                        delete_files_in_path(folder_contents, &trash_location);
+                        // deleting folder
+                        fs::remove_dir(folder_dir)
+                            .expect("Failed to delete folder. Please check your permissions");
+                    }
+                    _ => eprintln!("{}", e),
+                },
+            }
         }
         _ => {
             // Getting the current working directory of the program
