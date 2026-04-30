@@ -19,6 +19,7 @@ fn move_to_trash(trash_path: &PathBuf, file: PathBuf) {
 }
 
 fn delete_files_in_path(folder_contents: fs::ReadDir, trash_path: &PathBuf) {
+    // This function needs to handle creating new subdirectories and deleting them
     for file in folder_contents {
         match file {
             Ok(file) => {
@@ -29,6 +30,7 @@ fn delete_files_in_path(folder_contents: fs::ReadDir, trash_path: &PathBuf) {
                     let contents = file_path
                         .read_dir()
                         .expect("Could not read the contents of folder");
+                    // create new subdirectory and append it to the trash folder then add the new one
                     delete_files_in_path(contents, trash_path);
                     fs::remove_dir(file_path)
                         .expect("Failed to delete folder. Please check your permissions");
@@ -36,6 +38,18 @@ fn delete_files_in_path(folder_contents: fs::ReadDir, trash_path: &PathBuf) {
             }
             Err(e) => eprintln!("Error {e:?} occured while trying to delete file"),
         }
+    }
+}
+
+fn create_file_directory(folder_path: &PathBuf) -> Result<&PathBuf, std::io::Error> {
+    // creates a dir and returns the pathBuf, the create_dir function returns an error when the folder exists but we just want the path to that folder either way
+    // So this is just a wrapper to get the behaviour we desire
+    match fs::create_dir(&folder_path) {
+        Ok(_) => Ok(folder_path),
+        Err(e) => match e.kind() {
+            ErrorKind::AlreadyExists => Ok(folder_path),
+            _ => Err(e),
+        },
     }
 }
 
@@ -56,67 +70,55 @@ fn main() {
             "Safe-rm is a safe alternative to rm command. It outputs all removed files to the Trash folder."
         ),
         "-r" => {
-            let folder = args
-                .get(2)
-                .expect("Folder to be removed was not added to the command args");
+            let (_, folder_list) = args.split_at(2);
 
-            let folder_path = PathBuf::from(folder);
+            if folder_list.len() < 2 {
+                println!("Please add folders to delete");
+                return;
+            }
+            let folders = folder_list.into_iter().map(fs::canonicalize);
 
-            let folder_dir = if folder_path.is_absolute() {
-                folder_path
-            } else {
-                let cwd_directory = env::current_dir()
-                    .expect("Cannot Find the current working directory for this os");
-                cwd_directory.join(&folder)
-            };
+            for folder in folders {
+                match folder {
+                    Ok(folder_path) => {
+                        let folder_name = folder_path
+                            .file_name()
+                            .expect("selected directory does not have a name");
 
-            let folder_contents = folder_dir
-                .read_dir()
-                .expect("Could not read the contents of folder");
+                        // creating a folder in trash path to push all the new items
+                        match create_file_directory(&trash_location.join(folder_name)) {
+                            Ok(path) => {
+                                //getting files in the folder
+                                // Will fail if the path is a file
+                                let folder_contents = folder_path
+                                    .read_dir()
+                                    .expect("Could not read the contents of folder");
 
-            // creating a folder in trash path to push all the new items
-            let folder_name = folder_dir
-                .file_name()
-                .expect("seletect DIR does not have a name");
-            let trash_location = trash_location.join(folder_name);
-
-            match fs::create_dir(&trash_location) {
-                Ok(_) => {
-                    //println!("Folder {:?} was created", trash_location);
-                    delete_files_in_path(folder_contents, &trash_location);
-                    // deleting folder
-                    fs::remove_dir(folder_dir)
-                        .expect("Failed to delete folder. Please check your permissions");
-                }
-                Err(e) => match e.kind() {
-                    ErrorKind::AlreadyExists => {
-                        // keep going and delete the file
-                        //println!("Folder already exiosts");
-                        delete_files_in_path(folder_contents, &trash_location);
-                        // deleting folder
-                        fs::remove_dir(folder_dir)
-                            .expect("Failed to delete folder. Please check your permissions");
+                                delete_files_in_path(folder_contents, &path);
+                                // deleting folder
+                                fs::remove_dir(folder_path).expect(
+                                    "Failed to delete folder. Please check your permissions",
+                                );
+                            }
+                            Err(e) => eprintln!("{}", e),
+                        }
                     }
-                    _ => eprintln!("{}", e),
-                },
+                    Err(e) => eprint!("Could not resolve path with error: {}", e),
+                }
             }
         }
         _ => {
-            // Getting the current working directory of the program
-            let cwd_directory =
-                env::current_dir().expect("Cannot Find the current working directory for this os");
+            //Getting the absolute path for all the files
+            //Already checked if the len of the args are bigger than one
+            let (_, files) = args.split_at(1);
+
+            let all_files = files.into_iter().map(fs::canonicalize);
 
             // looping through all the files and moving them to Trash one by one
-            for file_path in &args[1..] {
-                let file = PathBuf::from(file_path);
-
-                if file.is_absolute() {
-                    move_to_trash(&trash_location, file)
-                } else if file.is_file() {
-                    let full_path = cwd_directory.join(file);
-                    move_to_trash(&trash_location, full_path)
-                } else {
-                    eprintln!("{file_path} might be a directory or might not exist");
+            for file_path in all_files {
+                match file_path {
+                    Ok(path) => move_to_trash(&trash_location, path),
+                    Err(e) => eprintln!("Program exited with error: {:}", e),
                 }
             }
         }
