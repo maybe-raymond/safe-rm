@@ -1,7 +1,5 @@
 use std::env;
-use std::ffi::OsStr;
 use std::fs;
-use std::io::ErrorKind;
 use std::path::PathBuf;
 
 fn move_to_trash(trash_path: &PathBuf, file: PathBuf) {
