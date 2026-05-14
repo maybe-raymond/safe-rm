@@ -38,7 +38,7 @@ fn main() {
             // meeant for folders
             let (_, folder_list) = args.split_at(2);
 
-            if folder_list.len() < 2 {
+            if folder_list.is_empty() {
                 println!("Please add folders to delete");
                 return;
             }
