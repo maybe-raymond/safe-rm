@@ -5,10 +5,3 @@ version = 4
 [[package]]
 name = "safe-rm"
 version = "0.1.0"
-
-[[package]]
-name = "safe-rm"
-version = "0.1.1"
-dependencies = [
- "safe-rm 0.1.0",
-]
