@@ -52,6 +52,26 @@ Globs also work with the command
 safe-rm *json
 ```
 
+---
+
+### Functionality
+
+#### Deleting a File that already has a similar to one that already exists
+
+Current functionality will involve adding a date to the name of the string. This method was chosen as a way to allow people to access older deleted files and not permanently delete or over write the old ones
+
+##### Example
+
+current trash bin --> /Trash/node_modules
+
+folder to delete ---> /isEven/node_modules
+
+The /isEven/node_modules will become: /isEven/node_modules_date (the date, time and seconds deleted)
+
+Will dabble with a `-d` to delete the file if it exists before hand.
+
+---
+
 ## Development
 
 - Add a better help message
